@@ -18,7 +18,6 @@ export default class DocxsyFileItemTable extends LightningDatatable {
             'click',
             (e) => {
                 const parentRow = findParentRow(e.target);
-                console.log(parentRow);
                 if (parentRow) {
                     window.postMessage(
                         {
