@@ -89,8 +89,6 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
             if (origin === window.location.origin) {
                 if (data.datarow) {
                     this.findChildToOpen(this.data, data.datarow);
-                    console.log('Do stuff with this Row Id: ', data.datarow);
-                    console.log('Data: ', data);
                 }
             }
         };
