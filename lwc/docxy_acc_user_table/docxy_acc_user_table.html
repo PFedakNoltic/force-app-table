@@ -1,0 +1,151 @@
+<template>
+    <lightning-card title="Files Connect">
+        <div class="slds-p-horizontal_medium">
+            <!--      <div class="slds-text-heading_small slds-m-left_small">Files Connect</div>-->
+            <div class="slds-p-around_medium lgc-bg top-right-relative">
+
+                <lightning-button-icon class="slds-m-left_xx-small" icon-name="utility:new"
+                                       alternative-text="Create Folder"
+                                       title="Create Folder" onclick={handleCreateFolderClick}
+                                       data-value="createFolder">
+                </lightning-button-icon>
+                <lightning-button-icon class="slds-m-left_xx-small" icon-name="utility:share_mobile"
+                                       alternative-text="Upload File"
+                                       title="Upload File" onclick={handleUploadClick} data-value="fileUpload">
+                </lightning-button-icon>
+                <lightning-button-icon class="slds-m-left_xx-small" icon-name={changeViewIcon}
+                                       alternative-text="Change View"
+                                       title="Change View" onclick={handleToggleClick}>
+                </lightning-button-icon>
+                <lightning-button-icon class="slds-m-left_xx-small" icon-name="utility:refresh"
+                                       alternative-text="Refresh Data"
+                                       title="Refresh Data" onclick={fetchData}>
+                </lightning-button-icon>
+                <lightning-button-icon class="slds-m-left_xx-small" icon-name="utility:search"
+                                       variant={searchButtonVariant}
+                                       alternative-text="Search by name"
+                                       title="Search" onclick={handleSearchToggle}>
+                </lightning-button-icon>
+                <lightning-button-icon class="slds-m-left_xx-small"
+                                       icon-name={sortButtonIcon}
+                                       alternative-text="Sort by name"
+                                       title="Sort" onclick={handleSortToggle}>
+                </lightning-button-icon>
+                <lightning-button-icon class="slds-m-left_xx-small" icon-name={filteredIcon}
+                                       alternative-text={filteredHelpText}
+                                       title={filteredHelpText} onclick={handleFilteredToggle}>
+                </lightning-button-icon>
+                <template if:false={isErrorWithLogin}>
+                    <lightning-button-icon class="slds-m-left_xx-small" icon-name="utility:adduser"
+                                           alternative-text="Switch Account"
+                                           title="Switch Account" onclick={openVisualForcePage}>
+                    </lightning-button-icon>
+                </template>
+            </div>
+
+            <div class={dataAvailableClasses}>
+                <template if:true={isNoData}>
+                    There is no data for this record on Google Drive
+                </template>
+                <template if:false={isNoData}>
+
+                    <lightning-input
+                            if:true={isSearchOpen}
+                            class="slds-m-around_small"
+                            name="enter-search"
+                            label="Search by name"
+                            type="search"
+                            disabled={isLoading}
+                            value={searchText}
+                            onchange={handleSearchValueChange}
+                    ></lightning-input>
+
+                    <template if:true={changedData}>
+                        <ul class="slds-list_horizontal slds-has-dividers_left path-trail">
+                            <template for:each={pathList} for:item="item">
+                                <li key={item.id} data-item={item.id} onclick={handlePathClick} class="path pull-left">
+                                    {item.name}
+                                </li>
+                            </template>
+                        </ul>
+                        <div style="max-height: 300px; height:200px; overflow-y: scroll;">
+                            <div class="slds-grid slds-wrap">
+                                <template if:true={changedData}>
+                                    <div>{name}</div>
+                                    <c-docxy_file_item_table
+                                            key-field="id"
+                                            data={changedData}
+                                            columns={columns}
+                                            onrowaction={handleChildActions}
+                                            hide-checkbox-column
+                                            default-sort-direction={defaultSortDirection}
+                                            sorted-direction={sortDirection}
+                                            sorted-by={sortedBy}
+                                            onsort={onHandleSort}>
+                                    >
+                                    </c-docxy_file_item_table>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </template>
+            </div>
+
+            <template if:true={isErrorWithLogin}>
+                <div class="slds-m-top_x-large slds-p-around_xx-small">
+
+                    <div style="font-size: initial;" class="slds-align_absolute-center slds-m-top_x-small">
+                        There is some issue with login to Google Account.
+                    </div>
+
+                    <div style="font-size: initial;" class="slds-align_absolute-center slds-m-top_x-small">
+                        Please login to use component.
+                    </div>
+
+                    <div class="slds-align_absolute-center slds-m-top_x-small">
+                        <lightning-button label="Login" title="Login"
+                                          onclick={openVisualForcePage}></lightning-button>
+                    </div>
+
+                </div>
+            </template>
+
+        </div>
+        <!--Use template if:true to display/hide popup based on isModalOpen value-->
+        <template if:true={isNameModalOpen}>
+            <c-docxsy_modal_window onmodalaction={handleModalActions} header-text={modalHeaderText}
+                                   display-footer="true">
+                <lightning-input type="text" label={modalLabelText} value={nameBeforeRename}
+                                 placeholder="type text here..."
+                                 onchange={handleInputChange} required></lightning-input>
+            </c-docxsy_modal_window>
+        </template>
+        <template if:true={isDeleteModalOpen}>
+            <c-docxsy_modal_window onmodalaction={handleModalActions} header-text="Confirm Delete" display-footer="true"
+                                   confirm-button-label="Delete"
+                                   confirm-button-variant="destructive">
+                <div class="slds-text-align_center">
+                    <h2>Are you sure you want to delete file?</h2>
+                </div>
+            </c-docxsy_modal_window>
+        </template>
+        <template if:true={isUploadModalOpen}>
+            <c-docxsy_modal_window onmodalaction={handleModalActions} header-text="File Upload">
+                <div class="slds-align_absolute-center">
+                    <lightning-file-upload
+                            label="Upload files to current folder"
+                            name="fileUploader"
+                            accept={acceptedFormats}
+                            record-id={recordId}
+                            onuploadfinished={handleUploadFinished}>
+                    </lightning-file-upload>
+                </div>
+            </c-docxsy_modal_window>
+        </template>
+
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Loading" variant="brand" size="medium"
+                               class="slds-is-absolute"></lightning-spinner>
+        </template>
+    </lightning-card>
+</template>

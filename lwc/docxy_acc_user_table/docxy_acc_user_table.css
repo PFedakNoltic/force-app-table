@@ -1,0 +1,88 @@
+/**
+ * Created by ivandnistrian on 21.01.2021.
+ */
+
+.slds-form-element__label {
+    margin-left: 23px;
+}
+
+.slds-file-selector__dropzone {
+    margin-left: 23px;
+}
+
+li div {
+    cursor: pointer;
+}
+
+
+
+.path-trail {
+    background-color: #CCD2D8;
+    color: #62717C;
+    list-style: none;
+    padding: 0px;
+    margin-bottom: 1%;
+    /*margin-top: 4%;*/
+    /*margin: auto;*/
+    /*width: 80%;*/
+}
+
+.path {
+    padding: 4px 16px;
+    position: relative;
+    cursor: pointer;
+}
+
+.path:not(:last-child):before,
+.path:not(:last-child):after {
+    content: '';
+    display: inline-block;
+    height: 1px;
+    width: 17px;
+    position: absolute;
+    right: -7px;
+    background-color: #fff;
+}
+
+.path:before {
+    top: 6px;
+    -moz-transform: rotate(60deg);
+    -ms-transform: rotate(60deg);
+    -o-transform: rotate(60deg);
+    -webkit-transform: rotate(60deg);
+    transform: rotate(60deg);
+}
+
+.path:after {
+    bottom: 6px;
+    -moz-transform: rotate(120deg);
+    -ms-transform: rotate(120deg);
+    -o-transform: rotate(120deg);
+    -webkit-transform: rotate(120deg);
+    transform: rotate(120deg);
+}
+
+.top-right-relative {
+    position: absolute;
+    top: 0%;
+    right: 1%;
+}
+
+.spinner {
+    position: absolute;
+}
+
+.overflow {
+    overflow-y: auto;
+    max-height: 35rem;
+    width: 100%;
+}
+
+.noData {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 5rem;
+    font-size: initial;
+}

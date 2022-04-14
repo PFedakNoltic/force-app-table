@@ -1,0 +1,37 @@
+/**
+ * Created by ivandnistrian on 21.01.2021.
+ */
+.file-row {
+    display: block;
+    background: whitesmoke;
+    margin: 0.1%;
+}
+.file-tile {
+    display: block;
+    background: whitesmoke;
+    margin: 1%;
+    padding: 2%;
+}
+.wrap-text{
+    overflow-wrap: break-word;
+}
+
+.right-relative {
+    position: absolute;
+    top: 25%;
+    right: 1%;
+}
+
+.parent {
+    /*display: flex;*/
+    cursor: pointer;
+    padding: 1% 1%;
+    /*justify-content: center;*/
+    align-items: center; /* To align vertically, if needed*/
+}
+
+.checked {
+    background: #4285f4;
+    color: #fff;
+}
+
