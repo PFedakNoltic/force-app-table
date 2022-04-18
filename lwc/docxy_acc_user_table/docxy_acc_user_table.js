@@ -55,10 +55,18 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
                 fieldName: 'displayIconName'
             }
         }
+    }, {
+        label: 'Mime type',
+        fieldName: "mimeType",
+        sortable: true,
     },
         {
             type: 'action',
-            typeAttributes: {rowActions: {fieldName: 'reassignActions'}},
+            typeAttributes: {
+                rowActions: {
+                    fieldName: 'reassignActions'
+                }
+            },
             cellAttributes: {alignment: 'bottom-right'}
         }
     ];
@@ -96,22 +104,16 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
         let contactsList = [];
         this.changedData.forEach(record => {
             let contactObj = {...record};
+            contactObj.reassignActions = [
+                {label: 'Open', name: 'open'},
+                {label: 'Delete', name: 'delete'},
+                {label: 'Rename', name: 'rename'},
+                {label: 'Download', name: 'download'},
+            ];
             if (record.salesforceId === this.recordId) {
-                contactObj.reassignActions = [
-                    {label: 'Open', name: 'open'},
-                    {label: 'Unlink Record', name: 'unlink'},
-                    {label: 'Delete', name: 'delete'},
-                    {label: 'Rename', name: 'rename'},
-                    {label: 'Download', name: 'download'},
-                ];
+                contactObj.reassignActions.unshift({label: 'Unlink Record', name: 'unlink'});
             } else if (record.salesforceId !== this.recordId) {
-                contactObj.reassignActions = [
-                    {label: 'Open', name: 'open'},
-                    {label: 'Link to Record', name: 'linkto'},
-                    {label: 'Delete', name: 'delete'},
-                    {label: 'Rename', name: 'rename'},
-                    {label: 'Download', name: 'download'},
-                ];
+                contactObj.reassignActions.unshift({label: 'Link to Record', name: 'linkto'});
             }
             if (record.mimeType.includes("folder")) {
                 contactObj.displayIconName = "doctype:folder";
