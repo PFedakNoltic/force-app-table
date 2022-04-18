@@ -1,4 +1,4 @@
-import {LightningElement, api, track, wire} from "lwc";
+import {LightningElement, api, track} from "lwc";
 import {ShowToastEvent} from "lightning/platformShowToastEvent";
 import {NavigationMixin} from "lightning/navigation";
 import getFiles from "@salesforce/apex/DocxsyController.getFilesList";
@@ -9,15 +9,6 @@ import createFolder from "@salesforce/apex/DocxsyController.createFolder";
 import downloadFile from "@salesforce/apex/DocxsyController.downloadFile";
 import linkFile from "@salesforce/apex/DocxsyController.linkFile";
 import unLinkFile from "@salesforce/apex/DocxsyController.unLinkFile";
-
-const actions = [
-    {label: 'Open', name: 'open'},
-    {label: 'Link to Record', name: 'linkto'},
-    {label: 'Unlink Record', name: 'unlink'},
-    {label: 'Delete', name: 'delete'},
-    {label: 'Rename', name: 'rename'},
-    {label: 'Download', name: 'download'},
-];
 
 
 export default class DocxsyAccUserTable extends NavigationMixin(LightningElement) {
@@ -66,7 +57,9 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
         }
     },
         {
-            type: 'action', typeAttributes: {rowActions: actions}, cellAttributes: {alignment: 'bottom-right'}
+            type: 'action',
+            typeAttributes: {rowActions: {fieldName: 'reassignActions'}},
+            cellAttributes: {alignment: 'bottom-right'}
         }
     ];
 
@@ -103,6 +96,23 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
         let contactsList = [];
         this.changedData.forEach(record => {
             let contactObj = {...record};
+            if (record.salesforceId === this.recordId) {
+                contactObj.reassignActions = [
+                    {label: 'Open', name: 'open'},
+                    {label: 'Unlink Record', name: 'unlink'},
+                    {label: 'Delete', name: 'delete'},
+                    {label: 'Rename', name: 'rename'},
+                    {label: 'Download', name: 'download'},
+                ];
+            } else if (record.salesforceId !== this.recordId) {
+                contactObj.reassignActions = [
+                    {label: 'Open', name: 'open'},
+                    {label: 'Link to Record', name: 'linkto'},
+                    {label: 'Delete', name: 'delete'},
+                    {label: 'Rename', name: 'rename'},
+                    {label: 'Download', name: 'download'},
+                ];
+            }
             if (record.mimeType.includes("folder")) {
                 contactObj.displayIconName = "doctype:folder";
             } else if (record.mimeType.includes("image")) {
@@ -121,21 +131,6 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
             contactsList.push(contactObj);
         });
         this.changedData = contactsList;
-    }
-
-    handleSelect(event) {
-        let selectedDiv = event.currentTarget.dataset.item;
-        let value = event.currentTarget.dataset.value;
-        let type = event.currentTarget.dataset.type;
-        let name = event.currentTarget.dataset.name;
-
-        event.preventDefault();
-        // const selectedEvent = new CustomEvent('selected', {
-        //     detail: {
-        //         "id": selectedDiv, "action": value, 'type': type, "name": name
-        //     }
-        // });
-        // this.dispatchEvent(selectedEvent);
     }
 
     fetchData() {
@@ -215,14 +210,52 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
         return found;
     }
 
-    handleChildActions(event) {
+    handleCardRedirect(event) {
+        this.action = event.detail.action;
+        let googleDriveRecordId = event.detail.id;
+        if (this.action === "redirect") {
+            this.findChildToOpen(this.data, googleDriveRecordId);
+        }
+    }
+
+    handleCardChildActions(event) {
+        this.action = event.detail.action;
+        let googleDriveRecordId = event.detail.id;
+        let type = event.detail.type;
+        let name = event.detail.name;
+        if (this.action === "delete") {
+            this.isDeleteModalOpen = true;
+            this.googleDriveId = googleDriveRecordId;
+        }
+        if (this.action === "rename") {
+            this.isNameModalOpen = true;
+            this.recordToRenameId = googleDriveRecordId;
+            this.nameBeforeRename = name;
+            this.modalHeaderText = "Rename file/folder";
+            this.modalLabelText = "Enter new name";
+        }
+        if (this.action === "download") {
+            // let name = event.detail.name;
+            this.handleDownload(googleDriveRecordId, type, name);
+        }
+        if (this.action === "linkto") {
+            // let name = event.detail.name;
+            this.handleLinkFile(googleDriveRecordId, type, name);
+        }
+        if (this.action === "unlink") {
+            // let name = event.detail.name;
+            this.handleUnLinkFile(googleDriveRecordId);
+        }
+    }
+
+
+    handleTableChildActions(event) {
         this.action = event.detail.action.name;
         let googleDriveRecordId = event.detail.row.id;
         let type = event.detail.row.mimeType;
         let name = event.detail.row.name;
         let web = event.detail.row.webViewLink;
         if (this.action === "open") {
-            console.log('open');
             window.open(web, '_blank')
         }
         if (this.action === "delete") {
@@ -428,9 +461,6 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
     }
 
     handleRename(id, newName) {
-        console.log(id);
-        console.log(newName);
-        console.log(this.isServiceAcc);
         renameFile({googleDriveRecordId: id, newName: newName, isServiceAcc: this.isServiceAcc})
             .then((result) => {
                 if (result === "200") {
@@ -498,8 +528,6 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
                         a.click(); //Downloaded file
                         this.showToastEvent("Success", "success", "File Downloaded Successfully");
                     } else {
-                        var zip = new JSZip();
-
                         this.showToastEvent("Alert", "warning", "Unsupported Download Type");
                     }
                 } else {

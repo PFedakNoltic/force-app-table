@@ -6,7 +6,6 @@ function findParentRow(element) {
 }
 
 export default class DocxsyFileItemTable extends LightningDatatable {
-
     renderedCallback() {
         super.renderedCallback();
         if (this._hasRendered) {

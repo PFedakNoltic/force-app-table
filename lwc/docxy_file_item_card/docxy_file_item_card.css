@@ -1,0 +1,40 @@
+/**
+ * Created by pfedak on 14.04.2022.
+ */
+.column {
+    float: left;
+    width: 33%;
+}
+
+
+.card {
+    margin: 5px;
+    border: 0.7px solid darkgray;
+    padding: 5px;
+    text-align: center;
+    background-color: white;
+}
+
+:host {
+    --sds-c-card-color-background: white;
+}
+
+.fileName{
+    text-align: left;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    width:65%;
+}
+
+.row {
+    grid-template-rows: auto;
+}
+
+/* Clear floats after the columns */
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
+    margin-outside: 10px;
+}
