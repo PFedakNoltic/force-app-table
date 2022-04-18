@@ -70,22 +70,36 @@
                         </ul>
                         <div style="max-height: 300px; height:200px; overflow-y: scroll;">
                             <div class="slds-grid slds-wrap">
-                                <template if:true={changedData}>
-                                    <div>{name}</div>
-                                    <c-docxy_file_item_table
-                                            key-field="id"
-                                            data={changedData}
-                                            columns={columns}
-                                            onrowaction={handleChildActions}
-                                            hide-checkbox-column
-                                            default-sort-direction={defaultSortDirection}
-                                            sorted-direction={sortDirection}
-                                            sorted-by={sortedBy}
-                                            onsort={onHandleSort}>
-                                    >
-                                    </c-docxy_file_item_table>
+                                <template if:true={showRow}>
+                                    <template if:true={changedData}>
+                                        <div>{name}</div>
+                                        <c-docxy_file_item_table
+                                                key-field="id"
+                                                data={changedData}
+                                                columns={columns}
+                                                onrowaction={handleTableChildActions}
+                                                hide-checkbox-column
+                                                default-sort-direction={defaultSortDirection}
+                                                sorted-direction={sortDirection}
+                                                sorted-by={sortedBy}
+                                                onsort={onHandleSort}>
+                                            >
+                                        </c-docxy_file_item_table>
+                                    </template>
                                 </template>
                             </div>
+                            <template if:false={showRow}>
+                                <template if:true={changedData}>
+                                    <c-docxy_file_item_card
+                                            record-id={recordId}
+                                            file-linked={relatedToRecord}
+                                            changed-data={changedData}
+                                            onredirect={handleCardRedirect}
+                                            onselected={handleCardChildActions}
+                                    >
+                                    </c-docxy_file_item_card>
+                                </template>
+                            </template>
                         </div>
                     </template>
                 </template>

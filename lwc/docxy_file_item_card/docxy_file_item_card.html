@@ -1,0 +1,51 @@
+<!--
+ - Created by pfedak on 14.04.2022.
+ -->
+
+<!-- Docxy File Item Card -->
+<template>
+    <div class="row">
+        <template for:each={changedData} for:item="item">
+            <div class="column" key={item.id}>
+                <div class="card">
+                    <lightning-card variant="narrow">
+                        <lightning-layout>
+                            <lightning-layout-item size="2" data-id={item.id}  data-value="redirect" onclick={handleRedirect}>
+                                <lightning-icon icon-name={item.displayIconName}></lightning-icon>
+                            </lightning-layout-item>
+                            <lightning-layout-item class="fileName" size="8" data-id={item.id} data-value="redirect" onclick={handleRedirect}>
+                                <lightning-formatted-rich-text value={item.name} aria-setsize="10">
+                                </lightning-formatted-rich-text>
+                            </lightning-layout-item>
+                            <lightning-layout-item size="2">
+                                <lightning-button-menu alternative-text="Show menu"
+                                                       class="right-relative"
+                                                       menu-alignment="auto"
+                                                       icon-size="medium"
+                                                       data-id={item.id}
+                                                       onclick={checkLinked}
+                                >
+                                    <lightning-menu-item data-id={item.id}
+                                                         label="Open" onclick={handleOpen}></lightning-menu-item>
+                                    <lightning-menu-item if:false={linked} data-id={item.id} data-value="linkto"
+                                                         label="Link to Record"
+                                                         onclick={handleSelect}></lightning-menu-item>
+                                    <lightning-menu-item if:true={linked} data-id={item.id} data-value="unlink"
+                                                         label="Unlink Record"
+                                                         onclick={handleSelect}></lightning-menu-item>
+                                    <lightning-menu-item data-id={item.id} data-value="delete"
+                                                         label="Delete" onclick={handleSelect}></lightning-menu-item>
+                                    <lightning-menu-item data-id={item.id} data-value="rename" data-name={item.name}
+                                                         label="Rename" onclick={handleSelect}></lightning-menu-item>
+                                    <lightning-menu-item data-id={item.id} data-value="download"
+                                                         data-type={item.mimeType} data-name={item.name}
+                                                         label="Download" onclick={handleSelect}></lightning-menu-item>
+                                </lightning-button-menu>
+                            </lightning-layout-item>
+                        </lightning-layout>
+                    </lightning-card>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>
