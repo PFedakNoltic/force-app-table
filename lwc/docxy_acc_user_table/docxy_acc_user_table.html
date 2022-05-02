@@ -100,6 +100,20 @@
                                     </c-docxy_file_item_card>
                                 </template>
                             </template>
+                            <template if:true={downloadBool}>
+                                <c-jszip
+                                        id={downloadId}
+                                        mime-type={downloadMimeType}
+                                        name={downloadName}
+                                        onparentfolder={zipFileOpen}
+                                >
+                                </c-jszip>
+                            </template>
+                            <template if:true={changedData}>
+                                <c-docxy_download_file
+
+                                ></c-docxy_download_file>
+                            </template>
                         </div>
                     </template>
                 </template>

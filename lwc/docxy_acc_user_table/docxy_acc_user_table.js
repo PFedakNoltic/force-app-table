@@ -9,6 +9,23 @@ import createFolder from "@salesforce/apex/DocxsyController.createFolder";
 import downloadFile from "@salesforce/apex/DocxsyController.downloadFile";
 import linkFile from "@salesforce/apex/DocxsyController.linkFile";
 import unLinkFile from "@salesforce/apex/DocxsyController.unLinkFile";
+import {loadScript} from "lightning/platformResourceLoader";
+import jsSipLibrary from "@salesforce/resourceUrl/jszipmin";
+import r from "@salesforce/apex/DocxsyController.kk";
+
+async function blobToBase64(blob) {
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    return new Promise((resolve, _) => {
+        reader.onloadend = () => resolve(reader.result);
+    });
+}
+
+const multiSearchOr = (text, searchWords) => (
+    searchWords.some((el) => {
+        return text.match(new RegExp(el, "i"))
+    })
+)
 
 
 export default class DocxsyAccUserTable extends NavigationMixin(LightningElement) {
@@ -45,6 +62,14 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
     defaultSortDirection = 'asc';
     sortDirection = 'asc';
     sortedBy;
+    downloadBool = false;
+    downloadId;
+    downloadMimeType;
+    downloadName;
+    zip;
+    clId = "544696838446-1k2eg2h47251ir7hkb3s4s86pv6bv7r3.apps.googleusercontent.com";
+    parentFolder;
+    zipName;
 
     @track columns = [{
         label: 'File name',
@@ -83,6 +108,11 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
     connectedCallback() {
         this.fetchData();
         this.setupEventListeners();
+
+        loadScript(this, jsSipLibrary).then(() => {
+            console.log("loadded", jsSipLibrary);
+
+        });
     }
 
     setupEventListeners() {
@@ -90,6 +120,8 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
             if (origin === window.location.origin) {
                 if (data.datarow) {
                     this.findChildToOpen(this.data, data.datarow);
+                    console.log(this.data);
+                    console.log(data.datarow);
                 }
             }
         };
@@ -99,6 +131,25 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
     disconnectedCallback() {
         window.removeEventListener('message', this.messageHandler);
     }
+
+    // renderedCallback() { // invoke the method when component rendered or loaded
+    //
+    //     Promise.all([
+    //         loadScript(this, ZIP + '/gildas-lormeau-zip.js-3e79208/WebContent/zip.js'),
+    //         loadScript(this, ZIP + '/gildas-lormeau-zip.js-3e79208/WebContent/inflate.js'),
+    //         loadScript(this, ZIP + '/gildas-lormeau-zip.js-3e79208/WebContent/deflate.js'),
+    //     ])
+    //         .then(() => {
+    //             this.error = undefined; // scripts loaded successfully
+    //
+    //             // eslint-disable-next-line no-undef
+    //             this.Zip = zip
+    //             this.Zip.useWebWorkers = false
+    //
+    //             this.initialize();
+    //         })
+    //         .catch(error => this.handleError(error))
+    // }
 
     iconType() {
         let contactsList = [];
@@ -120,6 +171,7 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
             } else if (record.mimeType.includes("image")) {
                 contactObj.displayIconName = "doctype:image";
             } else if (record.mimeType.includes("spreadsheet")) {
+                console.log(record.mimeType);
                 contactObj.displayIconName = "doctype:gsheet";
             } else if (record.mimeType.includes("document")) {
                 contactObj.displayIconName = "doctype:gdoc";
@@ -194,6 +246,13 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
         return dataTree;
     }
 
+    zipFileOpen(event) {
+        this.downloadBool = false;
+        console.log(event.detail);
+        console.log(this.data);
+        this.findChildToOpen(this.data, event.detail);
+    }
+
     findChildToOpen(originalData, ids, key = "id") {
         const found = originalData.find(x => x.id === ids);
         const {id, name, mimeType} = found;
@@ -205,11 +264,18 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
                 .map(item => ({...item, _children: find(items, item.id, link)}));
             return toRet;
         };
-
-        this.changedData = find(originalData, id);
-        this.iconType();
-        this.pathList.push({id, name});
-        return found;
+        if (this.downloadBool === true) {
+            console.log("id, mimeType, name");
+            this.changedData = find(originalData, id);
+            this.iconType();
+            this.pathList.push({id, name});
+            this.handleDownloadZip(id, mimeType, name)
+        } else {
+            this.changedData = find(originalData, id);
+            this.iconType();
+            this.pathList.push({id, name});
+            return found;
+        }
     }
 
     handleCardRedirect(event) {
@@ -225,6 +291,7 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
         let googleDriveRecordId = event.detail.id;
         let type = event.detail.type;
         let name = event.detail.name;
+        let url = event.detail.fileUrl;
         if (this.action === "delete") {
             this.isDeleteModalOpen = true;
             this.googleDriveId = googleDriveRecordId;
@@ -238,7 +305,12 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
         }
         if (this.action === "download") {
             // let name = event.detail.name;
-            this.handleDownload(googleDriveRecordId, type, name);
+            if (type.includes("folder")) {
+                this.handleDownloadZip(googleDriveRecordId, type, name);
+            } else {
+                // let name = event.detail.name;
+                this.handleDownload(googleDriveRecordId, type, name);
+            }
         }
         if (this.action === "linkto") {
             // let name = event.detail.name;
@@ -272,8 +344,13 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
             this.modalLabelText = "Enter new name";
         }
         if (this.action === "download") {
-            // let name = event.detail.name;
-            this.handleDownload(googleDriveRecordId, type, name);
+            if (type.includes("folder")) {
+                this.handleDownloadZip(googleDriveRecordId, type, name);
+            } else {
+                // let name = event.detail.name;
+                this.handleDownload(googleDriveRecordId, type, name);
+            }
+
         }
         if (this.action === "linkto") {
             // let name = event.detail.name;
@@ -514,6 +591,97 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
         this.isUploadModalOpen = true;
     }
 
+
+    async handleDownloadZip(id, mimeType, name) {
+        this.zip = new JSZip();
+        let token;
+        let exportAttribute;
+        let fileType;
+        r({clId: this.clId})
+            .then((result) => {
+                token = result.Access_token__c;
+            })
+            .then((c) => {
+                console.log(token);
+                console.log(id);
+                console.log(mimeType);
+                console.log(name);
+                console.log(this.parentFolder);
+                if (this.parentFolder !== undefined) {
+                    this.changedData.forEach(record => {
+                        if (record.mimeType.includes("image")) {
+                            exportAttribute = "?alt=media";
+                            fileType = ".jpeg";
+                        } else if (record.mimeType.includes("document")) {
+                            exportAttribute = "/export?mimeType=application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                            fileType = ".docx";
+                        } else if (record.mimeType.includes("pdf")) {
+                            exportAttribute = "?alt=media";
+                            fileType = ".pdf";
+                        } else if (record.mimeType.includes("presentation")) {
+                            exportAttribute = "/export?mimeType=application/vnd.openxmlformats-officedocument.presentationml.presentation";
+                            fileType = ".pptx";
+                        } else if (record.mimeType.includes("apps.spreadsheet")) {
+                            exportAttribute = "?alt=media";
+                            fileType = ".xlsx";
+                        } else if (record.mimeType.includes("spreadsheetml")) {
+                            exportAttribute = "/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                            fileType = ".xlsx";
+                        } else if (record.mimeType.includes("video")) {
+                            exportAttribute = "?alt=media";
+                            fileType = ".MOV";
+                        } else if (record.mimeType.includes("gif")) {
+                            exportAttribute = "?alt=media";
+                            fileType = ".gif";
+                        }
+                        console.log(record.id);
+                        console.log(exportAttribute);
+                        console.log(fileType);
+                        fetch("https://www.googleapis.com/drive/v2/files/" + record.id + exportAttribute, {
+                            method: "GET",
+                            headers: {
+                                Authorization: 'Bearer ' + token + '',
+                            }
+                        }).then(response => response.blob())
+                            .then(myBlob => {
+                                blobToBase64(myBlob).then(myBase64 => {
+                                    console.log(myBase64);
+                                    myBase64 = myBase64.replace(/data.*base64,/, "");
+                                    console.log(myBase64);
+                                    let w = this.parentFolder.file(record.name + fileType, myBase64, {base64: true});
+                                    console.log(w);
+                                    let zipName = this.zipName;
+                                    console.log(zipName);
+                                    this.zip.generateAsync({
+                                        type: "base64"
+                                    }).then(function (content) {
+                                        // window.location.href = "data:application/zip;base64," + content;
+
+                                        let a = document.createElement("a"); //Create <a>
+                                        a.href = "data:application/zip;base64," + content;
+                                        a.download = zipName + ".zip"; //File name Here
+                                        a.click(); //Downloaded file
+                                        console.log(content);
+                                    });
+                                })
+                            })
+
+
+                    });
+                    console.log(this.parentFolder);
+
+                } else if (mimeType.includes("folder") && this.parentFolder === undefined) {
+                    this.parentFolder = this.zip.folder(name);
+                    this.zipName = name;
+                    this.downloadBool = true;
+                    this.findChildToOpen(this.data, id);
+                }
+            })
+
+
+    }
+
+
     handleDownload(id, mimeType, name) {
         downloadFile({googleDriveRecordId: id, mimeType: mimeType, isServiceAcc: this.isServiceAcc})
             .then((result) => {
@@ -521,13 +689,25 @@ export default class DocxsyAccUserTable extends NavigationMixin(LightningElement
                     if (!mimeType.includes("folder")) {
                         if (mimeType.includes(".document")) {
                             name += ".docx";
+                            // contentType = toString(mimeType);
                         } else if (mimeType.includes(".spreadsheet")) {
                             name += ".xlsx";
+                            // contentType = toString(mimeType);
                         }
-                        let a = document.createElement("a"); //Create <a>
-                        a.href = "data:" + mimeType + ";base64," + result;
-                        a.download = name; //File name Here
-                        a.click(); //Downloaded file
+                        console.log("result not folder");
+                        console.log(result);
+                        this.downloadId = id;
+                        this.downloadMimeType = mimeType;
+                        this.downloadName = name;
+                        this.downloadBool = true;
+                        this.showToastEvent("Success", "success", "File Downloaded Successfully");
+                    } else if (mimeType.includes("folder")) {
+                        console.log("result folder");
+                        console.log(result);
+                        this.downloadId = id;
+                        this.downloadMimeType = mimeType;
+                        this.downloadName = name;
+                        this.downloadBool = true;
                         this.showToastEvent("Success", "success", "File Downloaded Successfully");
                     } else {
                         this.showToastEvent("Alert", "warning", "Unsupported Download Type");
