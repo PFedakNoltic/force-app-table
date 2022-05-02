@@ -13,7 +13,9 @@ public without sharing class DocxsyController {
         } else {
             accessToken = DocxsyObjectService.getPersonAccountCS().Access_token__c;
         }
-        if (accessToken == null) { accessToken = 'noToken'; }
+        if (accessToken == null) {
+            accessToken = 'noToken';
+        }
     }
 
     @AuraEnabled
@@ -57,6 +59,12 @@ public without sharing class DocxsyController {
         String url = DRIVE_API_URI + '/' + googleDriveRecordId;
         HttpResponse resp = httpCallHandler(url, '', '', 'DELETE', isServiceAcc);
         return String.valueOf(resp.getStatusCode());
+    }
+
+
+    @AuraEnabled
+    public static SObject kk(String clId) {
+        return [SELECT Access_token__c FROM DocxsyPersonAccountToken__c WHERE Client_Id__c =: clId];
     }
 
     @AuraEnabled
@@ -119,7 +127,7 @@ public without sharing class DocxsyController {
     }
 
     @AuraEnabled
-    public static String linkFile(String googleDriveRecordId,  String salesforceRecordId, Boolean isServiceAcc) {
+    public static String linkFile(String googleDriveRecordId, String salesforceRecordId, Boolean isServiceAcc) {
         String url = DRIVE_API_URI + '/' + googleDriveRecordId;
         String contentType = 'application/json';
         String body = '{"appProperties":{"SalesforceId":"' + salesforceRecordId + '"}}';
@@ -152,7 +160,7 @@ public without sharing class DocxsyController {
             url = DRIVE_API_URI + '/' +
                     googleDriveRecordId +
                     '/export?mimeType=application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        } else if (mimeType != null && mimeType.endsWith('.spreadsheet')){
+        } else if (mimeType != null && mimeType.endsWith('.spreadsheet')) {
             url = DRIVE_API_URI + '/' +
                     googleDriveRecordId +
                     '/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
